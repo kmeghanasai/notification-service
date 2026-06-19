@@ -69,3 +69,12 @@ git remote add origin <repo-url>
 git branch -M main
 git push -u origin main
 ```
+
+If changes are made later:
+
+git add .
+git commit -m "<message>"
+git push
+
+Note:
+Run git add . while standing in the root folder (notification-service/) so all project changes are tracked.
