@@ -78,3 +78,36 @@ git push
 
 Note:
 Run git add . while standing in the root folder (notification-service/) so all project changes are tracked.
+
+apps → things that RUN
+packages → things that are SHARED
+monorepo → everything in ONE place
+
+## Install NestJS
+
+Purpose:
+Set up the backend application to build APIs and business logic.
+
+Commands:
+
+```bash
+npm install -g @nestjs/cli
+nest new .
+```
+
+Verification:
+
+```bash
+npm run start:dev
+```
+
+Starts at port_number 3000.
+
+Expected:
+Backend starts successfully and opens locally.
+
+apps/api
+main.ts -> starts the application
+module.ts -> connects everything
+controller.ts -> receives requests
+service.ts -> business logic
