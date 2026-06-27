@@ -279,3 +279,61 @@ prisma/
 schema.prisma
 prisma.config.ts
 ```
+
+## Configure PostgreSQL with Prisma
+
+Purpose:
+
+Persist notifications in a PostgreSQL database instead of in-memory storage.
+
+### Install Prisma
+
+```bash
+npm install prisma --save-dev
+npm install @prisma/client
+```
+
+Initialize Prisma:
+
+```bash
+npx prisma init
+```
+
+### Create Migration
+
+```bash
+npx prisma migrate dev --name init_notifications
+```
+
+Generate Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+### Install PostgreSQL Driver (Prisma 7)
+
+```bash
+npm install @prisma/adapter-pg pg dotenv
+npm install -D @types/pg
+```
+
+### Environment Variables
+
+Create `.env` inside `apps/api`.
+
+```env
+DATABASE_URL="<Neon PostgreSQL connection string>"
+```
+
+### Important Note
+
+NestJS does **not** automatically load `.env`.
+
+Add at the top of `src/main.ts`:
+
+```ts
+import "dotenv/config";
+```
+
+This makes `process.env.DATABASE_URL` available to Prisma.

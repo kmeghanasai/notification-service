@@ -211,3 +211,124 @@ Installed `dotenv` and imported:
 ```ts
 import "dotenv/config";
 ```
+
+# Database Layer
+
+## Why PostgreSQL?
+
+The initial implementation stored notifications in an in-memory array.
+
+Limitation:
+
+- Data disappeared whenever the server restarted.
+
+Solution:
+
+- Store notifications in PostgreSQL.
+
+---
+
+## Prisma ORM
+
+Prisma acts as a bridge between NestJS and PostgreSQL.
+
+Architecture:
+
+```text
+Controller
+     │
+Service
+     │
+Prisma ORM
+     │
+PostgreSQL
+```
+
+Instead of writing SQL manually:
+
+```sql
+SELECT * FROM Notification;
+```
+
+Prisma provides:
+
+```ts
+prisma.notification.findMany();
+```
+
+---
+
+## Notification Model
+
+Created inside `schema.prisma`.
+
+Fields:
+
+- id
+- recipient
+- channel
+- message
+- status
+- createdAt
+
+Migration:
+
+```bash
+npx prisma migrate dev --name init_notifications
+```
+
+---
+
+## CRUD using Prisma
+
+Replaced in-memory array operations with Prisma methods.
+
+| Operation | Prisma Method                      |
+| --------- | ---------------------------------- |
+| Create    | `prisma.notification.create()`     |
+| Read All  | `prisma.notification.findMany()`   |
+| Read One  | `prisma.notification.findUnique()` |
+| Update    | `prisma.notification.update()`     |
+| Delete    | `prisma.notification.delete()`     |
+
+---
+
+## Complete CRUD API
+
+| Method | Endpoint             |
+| ------ | -------------------- |
+| POST   | `/notifications`     |
+| GET    | `/notifications`     |
+| GET    | `/notifications/:id` |
+| PATCH  | `/notifications/:id` |
+| DELETE | `/notifications/:id` |
+
+---
+
+## Debugging Lesson
+
+Issue:
+
+Prisma CLI connected successfully, but the NestJS application returned:
+
+```text
+ECONNREFUSED
+```
+
+Root Cause:
+
+The NestJS application was not loading environment variables from `.env`.
+
+Solution:
+
+Installed `dotenv` and imported:
+
+```ts
+import "dotenv/config";
+```
+
+at the top of `main.ts`.
+
+Result:
+
+The application successfully connected to Neon PostgreSQL and all CRUD operations worked correctly.
