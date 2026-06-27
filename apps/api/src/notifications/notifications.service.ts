@@ -1,38 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
-type Notification = {
-  id: number;
-  recipient: string;
-  channel: string;
-  message: string;
-  status: string;
-  createdAt: Date;
-};
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
 
 @Injectable()
 export class NotificationsService {
-  private notifications: Notification[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(notification: Omit<Notification, 'id' | 'status' | 'createdAt'>) {
-    const newNotification: Notification = {
-      id: Date.now(),
-      status: 'PENDING',
-      createdAt: new Date(),
-      ...notification,
-    };
-
-    this.notifications.push(newNotification);
-    return newNotification;
+  create(notification: CreateNotificationDto) {
+    return this.prisma.notification.create({
+      data: notification,
+    });
   }
 
   findAll() {
-    return this.notifications;
+    return this.prisma.notification.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
-  findOne(id: number) {
-    const notification = this.notifications.find(
-      n => n.id === id,
-    );
+  async findOne(id: number) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id },
+    });
 
     if (!notification) {
       throw new NotFoundException('Notification not found');
@@ -41,17 +32,13 @@ export class NotificationsService {
     return notification;
   }
 
-  delete(id: number) {
-    const index = this.notifications.findIndex(
-      notification => notification.id === id,
-    );
+  async delete(id: number) {
+    const notification = await this.findOne(id);
 
-    if (index === -1) {
-      throw new NotFoundException('Notification not found');
-    }
+    await this.prisma.notification.delete({
+      where: { id },
+    });
 
-    const deletedNotification = this.notifications.splice(index, 1);
-
-    return deletedNotification[0];
+    return notification;
   }
 }
