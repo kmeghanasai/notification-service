@@ -40,6 +40,12 @@ export default function Home() {
 
   useEffect(() => {
     fetchNotifications();
+
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const total = notifications.length;
