@@ -1,3 +1,4 @@
+import { notificationQueue } from '../queues/notification.queue';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -7,10 +8,16 @@ import { UpdateNotificationDto } from './dto/update-notification.dto';
 export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(notification: CreateNotificationDto) {
-    return this.prisma.notification.create({
-      data: notification,
+  async create(notification: CreateNotificationDto) {
+    const createdNotification = await this.prisma.notification.create({
+        data: notification,
     });
+
+    await notificationQueue.add('send-notification', {
+        notificationId: createdNotification.id,
+    });
+
+    return createdNotification;
   }
 
   findAll() {

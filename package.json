@@ -20,5 +20,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "bullmq": "^5.79.1",
+    "ioredis": "^5.11.1"
+  }
 }

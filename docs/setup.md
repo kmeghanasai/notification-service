@@ -337,3 +337,139 @@ import "dotenv/config";
 ```
 
 This makes `process.env.DATABASE_URL` available to Prisma.
+
+## Configure Redis Queue (Upstash)
+
+Purpose:
+
+Integrate a cloud-hosted Redis instance for asynchronous background processing.
+
+---
+
+### Create Upstash Redis
+
+1. Create a free Redis database on Upstash.
+2. Select the nearest available region.
+3. Copy the Redis TCP connection string.
+
+---
+
+### Environment Variable
+
+Add the Redis connection string to:
+
+```text
+apps/api/.env
+```
+
+```env
+REDIS_URL="<Upstash Redis connection string>"
+```
+
+---
+
+### Install Dependencies
+
+```bash
+npm install bullmq ioredis
+```
+
+Purpose:
+
+- **BullMQ** – Queue management library.
+- **ioredis** – Redis client.
+
+---
+
+### Create Queue
+
+Created:
+
+```text
+src/queues/notification.queue.ts
+```
+
+Queue Name:
+
+```text
+notifications
+```
+
+This queue receives notification jobs from the API.
+
+---
+
+### Create Worker
+
+Created:
+
+```text
+src/queues/notification.worker.ts
+```
+
+Run worker separately:
+
+```bash
+npm run worker:notifications
+```
+
+Purpose:
+
+- Listen for new jobs.
+- Process notifications in the background.
+- Update notification status after processing.
+
+---
+
+### Add Worker Script
+
+Inside `package.json`:
+
+```json
+"worker:notifications": "ts-node src/queues/notification.worker.ts"
+```
+
+---
+
+### Development Workflow
+
+Terminal 1:
+
+```bash
+npm run start:dev
+```
+
+Runs the NestJS backend.
+
+Terminal 2:
+
+```bash
+npm run worker:notifications
+```
+
+Runs the BullMQ worker.
+
+---
+
+### Current Notification Flow
+
+```text
+POST /notifications
+        │
+        ▼
+Store in PostgreSQL
+(Status = PENDING)
+        │
+        ▼
+Push Job to Redis Queue
+        │
+        ▼
+Worker Processes Job
+        │
+        ▼
+Update Status → DELIVERED
+```
+
+Result:
+
+Notifications are processed asynchronously without blocking API responses.

@@ -332,3 +332,181 @@ at the top of `main.ts`.
 Result:
 
 The application successfully connected to Neon PostgreSQL and all CRUD operations worked correctly.
+
+# Redis & BullMQ
+
+## Why Queue?
+
+Sending notifications (Email, SMS, Push) can take time.
+
+Instead of making the client wait until the notification is delivered, the API immediately stores the notification and pushes a job to a queue.
+
+Benefits:
+
+- Faster API response
+- Better scalability
+- Retry support
+- Background processing
+- Improved reliability
+
+---
+
+## Architecture
+
+```text
+Client
+   │
+POST /notifications
+   │
+   ▼
+NestJS API
+   │
+   ├──────────────► PostgreSQL
+   │                    │
+   │                    ▼
+   │              Status = PENDING
+   │
+   ▼
+Redis Queue
+   │
+   ▼
+BullMQ Worker
+   │
+   ▼
+Process Notification
+   │
+   ▼
+Update PostgreSQL
+Status = DELIVERED
+```
+
+---
+
+## Redis
+
+Redis is an in-memory data store.
+
+Used for:
+
+- Queues
+- Cache
+- Sessions
+- Rate limiting
+
+Redis stores jobs temporarily until a worker processes them.
+
+---
+
+## BullMQ
+
+BullMQ is a queue library built on top of Redis.
+
+Responsibilities:
+
+- Add jobs to queue
+- Process jobs
+- Retry failed jobs
+- Delay jobs
+- Schedule jobs
+
+---
+
+## Notification Queue
+
+Created:
+
+```text
+src/queues/notification.queue.ts
+```
+
+Queue Name:
+
+```text
+notifications
+```
+
+Each POST request adds a job containing:
+
+```text
+notificationId
+```
+
+to the Redis queue.
+
+---
+
+## Worker
+
+Created:
+
+```text
+src/queues/notification.worker.ts
+```
+
+Responsibilities:
+
+1. Read jobs from Redis.
+2. Process notifications.
+3. Update PostgreSQL status.
+
+Current implementation:
+
+```text
+PENDING
+    │
+Worker
+    │
+DELIVERED
+```
+
+Future implementation:
+
+```text
+PENDING
+    │
+Send Email (Resend)
+    │
+ ┌───────┴────────┐
+ │                │
+Success        Failure
+ │                │
+ ▼                ▼
+DELIVERED      FAILED
+```
+
+---
+
+## Background Processing
+
+API request lifecycle:
+
+```text
+POST /notifications
+        │
+        ▼
+Store in PostgreSQL
+        │
+Status = PENDING
+        │
+        ▼
+Add Job to Redis
+        │
+Return Response (200 OK)
+```
+
+Worker lifecycle:
+
+```text
+Redis Queue
+      │
+      ▼
+Worker
+      │
+      ▼
+Process Notification
+      │
+      ▼
+Update Status
+```
+
+This separates request handling from long-running tasks and improves system scalability.
