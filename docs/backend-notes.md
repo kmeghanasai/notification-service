@@ -1,134 +1,213 @@
-# Installation - Setup
+# Backend Notes
 
-## Install Node.js
+## NestJS Architecture
 
-Purpose:
-Node.js provides the JavaScript runtime required to run and manage the frontend (Next.js), backend (NestJS), package installation (npm), and project tooling.
-
-Install Node.js (LTS version).
-
-Verify installation:
-
-Restart VS Code / PowerShell after installation (environment variable changes may not reflect immediately).
-
-```bash
-node -v
-npm -v
+```
+Request
+    │
+    ▼
+Controller
+    │
+    ▼
+Service
+    │
+    ▼
+Response
 ```
 
-Expected:
-Commands should print the installed version numbers.
+### main.ts
+
+Starts the NestJS application.
+
+### module.ts
+
+Registers controllers and services.
+
+### controller.ts
+
+- Receives HTTP requests
+- Defines API endpoints
+- Calls service methods
+
+### service.ts
+
+Contains business logic.
 
 ---
 
-## Create Turborepo
+# Notifications Module
+
+Created:
+
+```text
+src/
+└── notifications/
+    ├── dto/
+    │   └── create-notification.dto.ts
+    ├── notifications.controller.ts
+    ├── notifications.service.ts
+    └── notifications.module.ts
+```
+
+---
+
+# REST API Endpoints
+
+| Method | Endpoint             | Description                   |
+| ------ | -------------------- | ----------------------------- |
+| GET    | `/notifications`     | Retrieve all notifications    |
+| GET    | `/notifications/:id` | Retrieve a notification by ID |
+| POST   | `/notifications`     | Create a notification         |
+| DELETE | `/notifications/:id` | Delete a notification         |
+
+---
+
+# DTO (Data Transfer Object)
 
 Purpose:
-Initialize a monorepo to manage frontend, backend, and shared packages in a single codebase with easier development and scalability.
+
+Validate incoming request data before it reaches the business logic.
+
+Installed packages:
+
+```bash
+npm install class-validator class-transformer
+```
+
+Global validation:
+
+```ts
+ValidationPipe;
+```
+
+Rules:
+
+- recipient → valid email
+- channel → EMAIL or SMS
+- message → string
+
+Invalid requests automatically return:
+
+```text
+400 Bad Request
+```
+
+---
+
+# Current Storage
+
+Notifications are currently stored inside an in-memory array.
+
+Current architecture:
+
+```
+Browser / Client
+        │
+        ▼
+Controller
+        │
+        ▼
+Service
+        │
+        ▼
+In-Memory Array
+```
+
+Limitation:
+
+Stopping the server clears all notifications.
+
+---
+
+# Next Goal
+
+Replace in-memory storage with PostgreSQL using Prisma ORM.
+
+Target architecture:
+
+```
+Browser
+     │
+     ▼
+Controller
+     │
+     ▼
+Service
+     │
+     ▼
+Prisma ORM
+     │
+     ▼
+PostgreSQL
+```
+
+## Prisma & PostgreSQL
+
+Purpose:
+Replace temporary in-memory storage with a persistent PostgreSQL database.
+
+### Prisma ORM
+
+Prisma acts as an Object Relational Mapper (ORM) between the NestJS backend and PostgreSQL.
+
+Flow:
+
+```text
+NestJS
+   │
+Prisma ORM
+   │
+PostgreSQL
+```
+
+Instead of writing raw SQL queries, Prisma provides a type-safe client for interacting with the database.
+
+---
+
+### Notification Model
+
+Created a `Notification` model in `schema.prisma`.
+
+Fields:
+
+- id
+- recipient
+- channel
+- message
+- status
+- createdAt
+
+---
+
+### Migration
 
 Command:
 
 ```bash
-npx create-turbo@latest .
-```
-
-Selected:
-
-- Package manager: npm
-
-### Run Turborepo
-
-Command:
-
-```bash
-npm run dev
+npx prisma migrate dev --name init_notifications
 ```
 
 Purpose:
-Run applications inside the monorepo in development mode.
+
+- Generate SQL migration.
+- Create database tables.
+- Synchronize PostgreSQL schema with Prisma schema.
 
 Result:
-Successfully launched generated Next.js application locally.
 
-Local URL:
+The `Notification` table was successfully created in the Neon PostgreSQL database.
 
-```text
-http://localhost:<port_number>
+## Debugging Lesson
+
+Problem:
+Prisma CLI connected successfully, but NestJS returned ECONNREFUSED.
+
+Root Cause:
+NestJS was not loading environment variables from `.env`.
+
+Solution:
+Installed `dotenv` and imported:
+
+```ts
+import "dotenv/config";
 ```
-
-## Configure Remote Repository
-
-Purpose:
-Connect local Git repository to GitHub for version control and backup.
-
-Create a repository and then do the following:
-Commands:
-
-```bash
-git remote add origin <repo-url>
-git branch -M main
-git push -u origin main
-```
-
-If changes are made later:
-
-git add .
-git commit -m "<message>"
-git push
-
-Note:
-Run git add . while standing in the root folder (notification-service/) so all project changes are tracked.
-
-apps → things that RUN
-packages → things that are SHARED
-monorepo → everything in ONE place
-
-## Install NestJS
-
-Purpose:
-Set up the backend application to build APIs and business logic.
-
-Commands:
-
-```bash
-npm install -g @nestjs/cli
-nest new .
-```
-
-Verification:
-
-```bash
-npm run start:dev
-```
-
-Starts at port_number 3000.
-
-Expected:
-Backend starts successfully and opens locally.
-
-apps/api
-main.ts -> starts the application
-module.ts -> connects everything
-controller.ts -> receives requests/ handles routes
-service.ts -> business logic, executes logic
-
-### Error — Nested Git Repository
-
-Error:
-Reason(coz we ran "nest new .")
-
-```text
-apps/api does not have a commit checked out
-```
-
-Cause:
-NestJS initialized a separate Git repository inside `apps/api`.
-
-Fix:
-
-```bash
-Remove-Item -Recurse -Force .\apps\api\.git
-```
-
-Result:
-Managed backend inside the parent monorepo repository.

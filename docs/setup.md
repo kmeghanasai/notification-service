@@ -1,4 +1,4 @@
-# Installation - Setup
+<!-- # Installation - Setup
 
 ## Install Node.js
 
@@ -131,4 +131,151 @@ Remove-Item -Recurse -Force .\apps\api\.git
 ```
 
 Result:
-Managed backend inside the parent monorepo repository.
+Managed backend inside the parent monorepo repository. -->
+
+# Installation & Setup
+
+## 1. Install Node.js
+
+Purpose:
+Node.js provides the JavaScript runtime required for the frontend (Next.js), backend (NestJS), npm package management, and project tooling.
+
+Verify installation:
+
+```bash
+node -v
+npm -v
+```
+
+Expected:
+Both commands should print installed version numbers.
+
+> Restart VS Code / PowerShell after installation so PATH changes are applied.
+
+---
+
+## 2. Create Turborepo
+
+Purpose:
+Initialize a monorepo to manage frontend, backend, and shared packages in a single repository.
+
+Command:
+
+```bash
+npx create-turbo@latest .
+```
+
+Selected:
+
+- Package Manager: npm
+
+Run:
+
+```bash
+npm run dev
+```
+
+Expected:
+The generated Next.js application starts successfully.
+
+---
+
+## 3. Configure GitHub Repository
+
+Purpose:
+Connect the local repository to GitHub.
+
+Commands:
+
+```bash
+git remote add origin <repository-url>
+git branch -M main
+git push -u origin main
+```
+
+Future workflow:
+
+```bash
+git add .
+git commit -m "<message>"
+git push
+```
+
+> Always run Git commands from the project root (`notification-service/`).
+
+---
+
+## 4. Install NestJS
+
+Purpose:
+Create the backend application.
+
+Commands:
+
+```bash
+npm install -g @nestjs/cli
+nest new .
+```
+
+Verify:
+
+```bash
+npm run start:dev
+```
+
+Expected:
+
+Backend starts successfully on:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## 5. Nested Git Repository Issue
+
+Error:
+
+```text
+apps/api does not have a commit checked out
+```
+
+Cause:
+
+Running `nest new .` initializes another Git repository inside `apps/api`.
+
+Fix:
+
+```bash
+Remove-Item -Recurse -Force .\apps\api\.git
+```
+
+Result:
+
+The backend is now managed by the parent monorepo repository.
+
+---
+
+## 6. Install Prisma
+
+Purpose:
+Prisma acts as the ORM between the NestJS backend and PostgreSQL database.
+
+Commands:
+
+```bash
+npm install prisma --save-dev
+npm install @prisma/client
+
+npx prisma init
+```
+
+Expected:
+
+```text
+prisma/
+.env
+schema.prisma
+prisma.config.ts
+```
