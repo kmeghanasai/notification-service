@@ -510,3 +510,81 @@ Update Status
 ```
 
 This separates request handling from long-running tasks and improves system scalability.
+
+# Email Delivery using Resend
+
+## Objective
+
+Upgrade the notification worker from simulating notification delivery to sending real email notifications.
+
+## Processing Flow
+
+```text
+Redis Queue
+      │
+      ▼
+BullMQ Worker
+      │
+      ▼
+Retrieve Notification from PostgreSQL
+      │
+      ▼
+Send Email using Resend
+      │
+      ▼
+Update Notification Status
+```
+
+## Notification Status Lifecycle
+
+```text
+PENDING
+    │
+Worker Processes Job
+    │
+ ┌──┴──────────┐
+ │             │
+Success      Failure
+ │             │
+ ▼             ▼
+DELIVERED    FAILED
+```
+
+- **PENDING** – Notification stored in PostgreSQL and waiting in the Redis queue.
+- **DELIVERED** – Email successfully sent through Resend.
+- **FAILED** – Email sending failed due to an exception or API error.
+
+## End-to-End Architecture
+
+```text
+Client
+   │
+POST /notifications
+   │
+   ▼
+NestJS API
+   │
+   ├────────────► PostgreSQL
+   │                  │
+   │                  ▼
+   │            Status = PENDING
+   │
+   ▼
+Redis Queue
+   │
+   ▼
+BullMQ Worker
+   │
+   ▼
+Resend Email API
+   │
+   ▼
+Recipient Inbox
+   │
+   ▼
+Update PostgreSQL Status
+```
+
+## Outcome
+
+The notification service now supports real asynchronous email delivery. Notifications are stored in PostgreSQL, queued using Redis, processed by BullMQ workers, delivered through Resend, and their delivery status is updated automatically.

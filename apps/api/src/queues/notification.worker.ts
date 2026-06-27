@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Resend } from 'resend';
 
 const redisUrl = new URL(process.env.REDIS_URL!);
 
@@ -13,6 +14,8 @@ const prisma = new PrismaClient({
   adapter: prismaAdapter,
 });
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 export const notificationWorker = new Worker(
   'notifications',
   async job => {
@@ -20,21 +23,44 @@ export const notificationWorker = new Worker(
 
     const notificationId = job.data.notificationId;
 
-    await prisma.notification.update({
-      where: {
-        id: notificationId,
-      },
-      data: {
-        status: 'DELIVERED',
-      },
+    const notification = await prisma.notification.findUnique({
+        where: {
+            id: notificationId,
+        },
     });
 
-    console.log(`Notification ${notificationId} marked as DELIVERED`);
+    if (!notification) {
+        throw new Error('Notification not found');
+    }
 
-    return {
-      success: true,
-      notificationId,
-    };
+    try {
+    await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: notification.recipient,
+        subject: 'Notification Service Test',
+        text: notification.message,
+    });
+
+    await prisma.notification.update({
+        where: { id: notificationId },
+        data: {
+        status: 'DELIVERED',
+        },
+    });
+
+    console.log(`Notification ${notificationId} delivered.`);
+    } catch (error) {
+    console.error(error);
+
+    await prisma.notification.update({
+        where: { id: notificationId },
+        data: {
+        status: 'FAILED',
+        },
+    });
+
+    throw error;
+    }
   },
   {
     connection: {

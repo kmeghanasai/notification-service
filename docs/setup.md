@@ -473,3 +473,73 @@ Update Status → DELIVERED
 Result:
 
 Notifications are processed asynchronously without blocking API responses.
+
+## Configure Email Delivery with Resend
+
+Purpose:
+
+Enable the background worker to send real email notifications after processing queued jobs.
+
+### Create Resend Account
+
+- Create a Resend account.
+- Generate an API Key.
+
+### Environment Variable
+
+Add the following to `apps/api/.env`:
+
+```env
+RESEND_API_KEY="<your_resend_api_key>"
+```
+
+### Install Dependency
+
+```bash
+npm install resend
+```
+
+### Development Sender
+
+For development, Resend's default sender was used:
+
+```text
+onboarding@resend.dev
+```
+
+### Email Notification Flow
+
+```text
+POST /notifications
+        │
+        ▼
+Store notification in PostgreSQL
+        │
+Status = PENDING
+        │
+        ▼
+Push job to Redis Queue
+        │
+        ▼
+BullMQ Worker
+        │
+        ▼
+Send email using Resend
+        │
+        ▼
+Update status = DELIVERED
+```
+
+### Run the Application
+
+Backend:
+
+```bash
+npm run start:dev
+```
+
+Worker:
+
+```bash
+npm run worker:notifications
+```
