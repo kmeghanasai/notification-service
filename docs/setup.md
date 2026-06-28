@@ -543,3 +543,36 @@ Worker:
 ```bash
 npm run worker:notifications
 ```
+
+## Scheduled Notifications
+
+### Database Update
+
+Added a new optional field to the `Notification` model:
+
+```text
+scheduledAt DateTime?
+```
+
+Run the migration after updating the Prisma schema:
+
+```bash
+npx prisma migrate dev --name add_scheduled_notifications
+```
+
+### API Request
+
+Notifications can now be scheduled by providing an optional `scheduledAt` field in ISO-8601 format.
+
+Example:
+
+```json
+{
+  "recipient": "user@example.com",
+  "channel": "EMAIL",
+  "message": "Scheduled notification",
+  "scheduledAt": "2026-06-28T12:30:00.000Z"
+}
+```
+
+If `scheduledAt` is omitted, the notification is processed immediately.

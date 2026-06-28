@@ -15,27 +15,44 @@ export default function Home() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recipient, setRecipient] = useState('');
   const [message, setMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const fetchNotifications = async () => {
     const res = await fetch('http://localhost:3000/notifications');
     const data = await res.json();
-    setNotifications(data);
+    if (Array.isArray(data)) {
+      setNotifications(data);
+    } else {
+      console.error('Expected array, got:', data);
+      setNotifications([]);
+    }
   };
 
   const sendNotification = async () => {
-    await fetch('http://localhost:3000/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient,
-        channel: 'EMAIL',
-        message,
-      }),
-    });
+    try {
+      setIsSending(true);
+      setNotice('');
 
-    setRecipient('');
-    setMessage('');
-    fetchNotifications();
+      await fetch('http://localhost:3000/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient,
+          channel: 'EMAIL',
+          message,
+        }),
+      });
+
+      setRecipient('');
+      setMessage('');
+      setNotice('Notification queued successfully.');
+      fetchNotifications();
+    } catch {
+      setNotice('Failed to send notification.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   useEffect(() => {
@@ -93,10 +110,12 @@ export default function Home() {
 
             <button
               onClick={sendNotification}
-              className="w-full rounded-lg bg-cyan-400 text-slate-950 font-semibold py-3 hover:bg-cyan-300"
+              disabled={isSending}
+              className="w-full rounded-lg bg-cyan-400 text-slate-950 font-semibold py-3 hover:bg-cyan-300 disabled:opacity-60"
             >
-              Send Notification
+              {isSending ? 'Sending...' : 'Send Notification'}
             </button>
+            {notice && <p className="mt-3 text-sm text-cyan-300">{notice}</p>}
           </div>
 
           <div className="col-span-2 rounded-2xl bg-slate-900 border border-slate-800 p-6">

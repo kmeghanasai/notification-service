@@ -588,3 +588,46 @@ Update PostgreSQL Status
 ## Outcome
 
 The notification service now supports real asynchronous email delivery. Notifications are stored in PostgreSQL, queued using Redis, processed by BullMQ workers, delivered through Resend, and their delivery status is updated automatically.
+
+# Scheduled Notification Processing
+
+## Overview
+
+The notification service now supports delayed delivery using BullMQ.
+
+### Processing Flow
+
+```text
+Client
+   │
+POST /notifications
+   │
+   ▼
+Store Notification (PENDING)
+   │
+Calculate Delay
+   │
+   ▼
+BullMQ Delayed Job
+   │
+Wait until scheduledAt
+   │
+   ▼
+Worker Executes
+   │
+Send Email
+   │
+Update Status → DELIVERED
+```
+
+## Retry Strategy
+
+Each queued notification is configured with:
+
+- Maximum Attempts: 3
+- Exponential Backoff
+- Initial Delay: 5 seconds
+- Failed jobs retained for debugging
+- Successful jobs automatically removed
+
+Notifications remain in the **PENDING** state while retries are in progress and transition to **FAILED** only after the final retry attempt.

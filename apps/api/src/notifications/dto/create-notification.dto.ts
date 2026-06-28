@@ -1,8 +1,4 @@
-import {
- IsEmail,
- IsString,
- IsIn
-} from 'class-validator';
+import { IsEmail, IsIn, IsISO8601, IsOptional, IsString } from 'class-validator';
 
 export class CreateNotificationDto {
 
@@ -16,4 +12,7 @@ export class CreateNotificationDto {
  @IsString()
  message: string;
 
+ @IsOptional()
+ @IsISO8601()
+ scheduledAt?: string;
 }

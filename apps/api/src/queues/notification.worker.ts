@@ -50,16 +50,21 @@ export const notificationWorker = new Worker(
 
     console.log(`Notification ${notificationId} delivered.`);
     } catch (error) {
-    console.error(error);
+      console.error(error);
 
-    await prisma.notification.update({
-        where: { id: notificationId },
-        data: {
-        status: 'FAILED',
-        },
-    });
+      const isFinalAttempt =
+        job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
 
-    throw error;
+      if (isFinalAttempt) {
+        await prisma.notification.update({
+          where: { id: notificationId },
+          data: {
+            status: 'FAILED',
+          },
+        });
+      }
+
+      throw error;
     }
   },
   {

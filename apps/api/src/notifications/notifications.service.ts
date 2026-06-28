@@ -13,9 +13,27 @@ export class NotificationsService {
         data: notification,
     });
 
-    await notificationQueue.add('send-notification', {
+const delay =
+  notification.scheduledAt
+    ? new Date(notification.scheduledAt).getTime() - Date.now()
+    : 0;
+
+    await notificationQueue.add(
+      'send-notification',
+      {
         notificationId: createdNotification.id,
-    });
+      },
+      {
+        delay: Math.max(delay, 0),
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    );
 
     return createdNotification;
   }
