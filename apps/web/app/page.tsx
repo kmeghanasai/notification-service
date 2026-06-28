@@ -11,12 +11,21 @@ type Notification = {
   createdAt: string;
 };
 
+type Template = {
+  id: number;
+  name: string;
+  subject: string;
+  body: string;
+};
+
 export default function Home() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recipient, setRecipient] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [notice, setNotice] = useState('');
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | ''>('');
 
   const fetchNotifications = async () => {
     const res = await fetch('http://localhost:3000/notifications');
@@ -26,6 +35,15 @@ export default function Home() {
     } else {
       console.error('Expected array, got:', data);
       setNotifications([]);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    const res = await fetch('http://localhost:3000/templates');
+    const data = await res.json();
+
+    if (Array.isArray(data)) {
+      setTemplates(data);
     }
   };
 
@@ -41,6 +59,8 @@ export default function Home() {
           recipient,
           channel: 'EMAIL',
           message,
+          templateId:
+            selectedTemplate === '' ? undefined : selectedTemplate,
         }),
       });
 
@@ -57,12 +77,11 @@ export default function Home() {
 
   useEffect(() => {
     fetchNotifications();
+    fetchTemplates();
 
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 3000);
+    const intervalId = setInterval(fetchNotifications, 3000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalId);
   }, []);
 
   const total = notifications.length;
@@ -100,7 +119,31 @@ export default function Home() {
               placeholder="you@example.com"
             />
 
-            <label className="text-sm text-slate-400">Message</label>
+            <label className="text-sm text-slate-400">Template</label>
+            <select
+              className="w-full mt-2 mb-4 rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none"
+              value={selectedTemplate}
+              onChange={e => {
+                const value = e.target.value ? Number(e.target.value) : '';
+                setSelectedTemplate(value);
+
+                const template = templates.find(t => t.id === value);
+                if (template) {
+                  setMessage(template.body);
+                } else {
+                  setMessage('');
+                }
+              }}
+            >
+              <option value="">Custom message</option>
+              {templates.map(template => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+
+            <label className="text-sm text-slate-400">Message Preview</label>
             <textarea
               className="w-full mt-2 mb-4 rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none min-h-32"
               value={message}

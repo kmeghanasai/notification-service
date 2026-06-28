@@ -631,3 +631,99 @@ Each queued notification is configured with:
 - Successful jobs automatically removed
 
 Notifications remain in the **PENDING** state while retries are in progress and transition to **FAILED** only after the final retry attempt.
+
+# Notification Templates
+
+## Purpose
+
+Templates allow users to reuse common notification messages instead of manually writing every notification from scratch.
+
+Examples:
+
+- Welcome Email
+- Reminder
+- Payment Failed
+- Order Update
+- Interview Invitation
+
+---
+
+## Database Design
+
+Added a new `NotificationTemplate` model.
+
+Each template contains:
+
+- name
+- subject
+- body
+- createdAt
+
+A notification can optionally reference a template using `templateId`.
+
+Relationship:
+
+```text
+One Template
+     ↓
+Many Notifications
+```
+
+This allows the system to track which template was used for each notification.
+
+---
+
+## Template APIs
+
+Created a dedicated Templates module with CRUD endpoints:
+
+```text
+POST   /templates
+GET    /templates
+GET    /templates/:id
+PATCH  /templates/:id
+DELETE /templates/:id
+```
+
+This allows templates to be created, viewed, updated, and deleted.
+
+---
+
+## Template-Based Notification Flow
+
+```text
+Frontend
+   │
+GET /templates
+   │
+Template Dropdown
+   │
+User selects template
+   │
+Message preview is filled
+   │
+User can edit message
+   │
+POST /notifications
+   │
+Backend validates templateId
+   │
+Notification is stored with final message + templateId
+   │
+Queued for delivery
+```
+
+---
+
+## Design Decision
+
+The backend does not directly replace the notification message with the template body.
+
+Instead:
+
+1. The frontend loads the selected template body into the message preview.
+2. The user can edit the message before sending.
+3. The backend stores the final edited message.
+4. The backend also stores `templateId` for history and analytics.
+
+This design preserves exactly what was sent while still maintaining the link to the original template.

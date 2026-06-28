@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsISO8601, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsIn, IsISO8601, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateNotificationDto {
 
@@ -15,4 +15,8 @@ export class CreateNotificationDto {
  @IsOptional()
  @IsISO8601()
  scheduledAt?: string;
+
+ @IsOptional()
+ @IsInt()
+ templateId?: number;
 }

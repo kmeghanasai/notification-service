@@ -1,5 +1,5 @@
-import { notificationQueue } from '../queues/notification.queue';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { notificationQueue } from '../queues/notification.queue';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
@@ -9,14 +9,33 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(notification: CreateNotificationDto) {
+    const templateId = notification.templateId;
+
+    if (templateId) {
+      const template = await this.prisma.notificationTemplate.findUnique({
+        where: { id: templateId },
+      });
+
+      if (!template) {
+        throw new NotFoundException('Template not found');
+      }
+    }
+
     const createdNotification = await this.prisma.notification.create({
-        data: notification,
+      data: {
+        recipient: notification.recipient,
+        channel: notification.channel,
+        message: notification.message,
+        scheduledAt: notification.scheduledAt
+          ? new Date(notification.scheduledAt)
+          : undefined,
+        templateId,
+      },
     });
 
-const delay =
-  notification.scheduledAt
-    ? new Date(notification.scheduledAt).getTime() - Date.now()
-    : 0;
+    const delay = notification.scheduledAt
+      ? new Date(notification.scheduledAt).getTime() - Date.now()
+      : 0;
 
     await notificationQueue.add(
       'send-notification',
@@ -43,12 +62,18 @@ const delay =
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        template: true,
+      },
     });
   }
 
   async findOne(id: number) {
     const notification = await this.prisma.notification.findUnique({
       where: { id },
+      include: {
+        template: true,
+      },
     });
 
     if (!notification) {
@@ -56,6 +81,15 @@ const delay =
     }
 
     return notification;
+  }
+
+  async update(id: number, updateData: UpdateNotificationDto) {
+    await this.findOne(id);
+
+    return this.prisma.notification.update({
+      where: { id },
+      data: updateData,
+    });
   }
 
   async delete(id: number) {
@@ -66,14 +100,5 @@ const delay =
     });
 
     return notification;
-  }
-
-  async update(id: number, updateData: UpdateNotificationDto) {
-    await this.findOne(id);
-
-    return this.prisma.notification.update({
-        where: { id },
-        data: updateData,
-    });
   }
 }

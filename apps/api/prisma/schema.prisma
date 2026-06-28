@@ -14,6 +14,8 @@ model Notification {
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
   scheduledAt DateTime?
+  templateId Int?
+  template NotificationTemplate? @relation(fields: [templateId], references: [id])
 }
 
 model NotificationTemplate {
@@ -22,4 +24,6 @@ model NotificationTemplate {
   subject     String
   body        String
   createdAt   DateTime @default(now())
+
+  notifications Notification[]
 }

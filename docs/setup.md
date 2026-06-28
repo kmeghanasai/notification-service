@@ -576,3 +576,80 @@ Example:
 ```
 
 If `scheduledAt` is omitted, the notification is processed immediately.
+
+## Notification Templates
+
+Purpose:
+
+Create reusable notification templates that can be selected from the frontend and used while sending notifications.
+
+### Database Update
+
+Added a new Prisma model:
+
+```prisma
+model NotificationTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+
+  notifications Notification[]
+}
+```
+
+Updated `Notification` model to store the template reference:
+
+```prisma
+templateId Int?
+template   NotificationTemplate? @relation(fields: [templateId], references: [id])
+```
+
+Run migration:
+
+```bash
+npx prisma migrate dev --name add_notification_templates
+npx prisma generate
+```
+
+### Template API
+
+Generated a dedicated Templates module, controller, and service.
+
+```bash
+nest generate module templates
+nest generate controller templates
+nest generate service templates
+```
+
+Implemented template CRUD APIs:
+
+```text
+POST   /templates
+GET    /templates
+GET    /templates/:id
+PATCH  /templates/:id
+DELETE /templates/:id
+```
+
+### Frontend Integration
+
+The frontend now fetches templates from:
+
+```text
+GET /templates
+```
+
+Templates are displayed in a dropdown. Selecting a template fills the message preview, which can still be edited before sending.
+
+When a notification is sent, the request includes:
+
+```json
+{
+  "recipient": "user@example.com",
+  "channel": "EMAIL",
+  "message": "Final edited message",
+  "templateId": 1
+}
+```
